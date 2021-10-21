@@ -8,7 +8,9 @@
         - gnupg2
         - software-properties-common
     state: present
-    update_cache: true
+    update_cache: yes
+    upgrade: yes
+    cache_valid_time: 86400
 
 - name: Add Docker GPG apt Key
   apt_key:
