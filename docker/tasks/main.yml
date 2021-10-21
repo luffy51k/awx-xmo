@@ -1,17 +1,52 @@
 ---
-- name: Install docker
-  shell: curl https://get.docker.com | sh
+- name: Install packages using apt
+  apt:
+    name: 
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg2
+        - software-properties-common
+    state: present
+    update_cache: no
 
-# - name: Modify privilege
-#   become: true
-#   shell: usermod -aG docker $USER
+- name: Add Docker GPG apt Key
+  apt_key:
+    url: "{{ docker_apt_gpg_key }}"
+    state: present
 
-- name: Change privilege of docker
-  become: true
-  file: dest=/usr/bin/docker mode=+x
+- name: Add Docker Repository
+  apt_repository:
+    repo: "{{ docker_apt_repository }}"
+    state: present
+    update_cache: true
 
-- name: python docker / docker-compse module
-  pip:
-    name:
-        - docker
-        - docker-compose
+- name: Update apt and install docker-ce
+  apt: update_cache=no name=docker-ce state=present
+
+- name: Check current docker-compose version.
+  command: docker-compose --version
+  register: docker_compose_vsn
+  changed_when: false
+  failed_when: false
+  check_mode: no
+
+- set_fact:
+    docker_compose_current_version: "{{ docker_compose_vsn.stdout | regex_search('(\\d+(\\.\\d+)+)') }}"
+  when:
+    - docker_compose_vsn.stdout is defined
+
+- name: Install or upgrade docker-compose
+  get_url: 
+    url : "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64"
+    dest: /usr/local/bin/docker-compose
+    mode: 'a+x'
+    force: yes
+  when: >
+    docker_compose_current_version is not defined
+    or docker_compose_current_version is version(docker_compose_version, '<')
+- name: Run and enable docker
+  service:
+    name: docker
+    state: started
+    enabled: true
