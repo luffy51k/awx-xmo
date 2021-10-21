@@ -1,9 +1,5 @@
 ---
-
 - name: Install Docker and Docker Compose on CentOS
-  hosts: all
-  become: true
-
   tasks:
     - name: Upgrade all packages
       yum: name=* state=latest
