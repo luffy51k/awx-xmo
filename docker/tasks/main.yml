@@ -1,15 +1,15 @@
 ---
-- name: Install packages using apt
-  apt:
-    name: 
-        - python3-apt
-        - apt-transport-https
-        - ca-certificates
-        - curl
-        - gnupg2
-        - software-properties-common
-    state: present
-    update_cache: true
+# - name: Install packages using apt
+#   apt:
+#     name: 
+#         - python3-apt
+#         - apt-transport-https
+#         - ca-certificates
+#         - curl
+#         - gnupg2
+#         - software-properties-common
+#     state: present
+#     update_cache: true
     
 
 - name: Add Docker GPG apt Key
