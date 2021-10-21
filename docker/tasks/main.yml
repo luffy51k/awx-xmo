@@ -1,50 +1,58 @@
----
-- name: Upgrade all packages
-  yum: name=* state=latest
+- name: Update apt cache
+  apt: update_cache=yes cache_valid_time=3600
 
-- name: Check if Docker is installed
-  command: systemctl status docker
-  register: docker_check
-  ignore_errors: yes
+- name: Upgrade all apt packages
+  apt: upgrade=dist
 
-- name: Download the Docker installer
-  get_url:
-    url: https://get.docker.com/
-    dest: /root/install_docker.sh
-    mode: 0700
-  when: docker_check.stderr.find('service could not be found') != -1
+- name: Install dependencies
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+    - gnupg-agent
+  
+- name: Add an apt signing key for Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add apt repository for stable version
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
 
 - name: Install Docker
-  shell: /root/install_docker.sh
-  when: docker_check.stderr.find('service could not be found') != -1
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - docker-ce
+    - docker-ce-cli 
+    - containerd.io
 
-- name: Remove the Docker installer file.
-  file:
-    state: absent
-    path: /root/install_docker.sh
+- name: Add user to docker group
+  user:
+    name: "{{ansible_user}}"
+    group: docker
 
-- name: Enable the Docker daemon in systemd
-  systemd:
-    name: docker
-    enabled: yes
-    masked: no
-
-- name: Start the Docker daemon
-  systemd:
-    name: docker
-    state: started
-    masked: no
-
-- name: Check if Docker Compose is installed
-  command: docker-compose --version
-  register: docker_compose_check
-  ignore_errors: yes
-
-- name: Download and install Docker Compose
+- name: Download docker-compose {{ docker_compose_version }}
   get_url:
-    url: https://github.com/docker/compose/releases/download/1.21.2/docker-compose-Linux-x86_64
-    dest: /usr/bin/docker-compose
-    mode: 0755
-  when:
-    - docker_compose_check.msg is defined
-    - docker_compose_check.msg.find('No such file or directory') != -1
+    url : https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+    dest: ~/docker-compose
+    mode: '+x'
+
+- name: Check docker-compose exists
+  stat: path=~/docker-compose
+  register: docker_compose
+
+- name: Move docker-compose to /usr/local/bin/docker-compose
+  command: mv ~/docker-compose /usr/local/bin/docker-compose
+  when: docker_compose.stat.exists
