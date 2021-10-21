@@ -1,9 +1,9 @@
 ---
-- name: Make app directory
-  file: path=/var/www state=directory mode=0755
+# - name: Make app directory
+#   file: path=/var/www state=directory mode=0755
 
-- name: Symbolic link
-  file: src=/vagrant dest=/var/www/vhosts state=link
+# - name: Symbolic link
+#   file: src=/vagrant dest=/var/www/vhosts state=link
 
 - name: Set timezone to Asia/Tokyo
   timezone:
